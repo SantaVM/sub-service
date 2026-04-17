@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+dotenv:
+  - .env
+
+vars:
+  GREETING: Hello, world!
+  MAINFILE: ./cmd/server/main.go
+
+tasks:
+  default:
+    desc: Runs the project
+    cmds:
+      - task: swag
+      - go run {{.MAINFILE}}
+    silent: false
+
+  build:
+    cmds:
+      - go build -o ./bin/sub-service.exe {{.MAINFILE}}
+
+  swag:
+    cmds:
+      - swag init -g {{.MAINFILE}} -o docs
+    sources:
+      - {.MAINFILE}
+      - internal/handler/*.go
+      - internal/model/*.go
+    generates:
+      - docs/docs.go
+      - docs/swagger.json
+      - docs/swagger.yaml
+
+  up:
+    cmds:
+      - goose up
+
+  down:
+    cmds:
+      - goose down
+
+  create:*:
+    desc: Create a new migration file with name from CLI arguments after ":"
+    vars:
+      NAME: '{{index .MATCH 0}}'
+    cmds:
+      - goose create {{.NAME}} sql

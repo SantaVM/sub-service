@@ -1,0 +1,454 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "REST API для агрегации данных об онлайн подписках пользователей",
+        "title": "Subscription Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/subscriptions": {
+            "get": {
+                "description": "Возвращает список подписок с фильтрацией и пагинацией",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Список подписок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Название сервиса",
+                        "name": "service_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Количество записей на странице",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Страница (начиная с 1)",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SubscriptionPageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает новую запись о подписке пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Создание новой подписки",
+                "parameters": [
+                    {
+                        "description": "Данные для создания подписки",
+                        "name": "subscription",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateSubscriptionInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.Subscription"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/total": {
+            "get": {
+                "description": "Возвращает суммарную стоимость всех подписок за выбранный период с фильтрацией\nЕсли end_date не задан, то считается за период в 1 календарный месяц",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Подсчет суммарной стоимости подписок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Название сервиса",
+                        "name": "service_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "01-2026",
+                        "description": "Дата начала периода",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "02-2026",
+                        "description": "Дата окончания периода (не включая). При отсутствии принимается период в 1 месяц",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.TotalCostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{id}": {
+            "get": {
+                "description": "Возвращает информацию о подписке по её ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Получение подписки по ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID подписки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Subscription"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновляет информацию о подписке по её ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Обновление подписки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID подписки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления подписки",
+                        "name": "subscription",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateSubscriptionInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Subscription"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет подписку по её ID",
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Удаление подписки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID подписки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/uuid": {
+            "get": {
+                "description": "Возвращает строку UUID",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "util"
+                ],
+                "summary": "Генерация UUID v7 (для тестирования)",
+                "responses": {
+                    "200": {
+                        "description": "some_uuid",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TotalCostResponse": {
+            "type": "object",
+            "properties": {
+                "total_cost": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.CreateSubscriptionInput": {
+            "type": "object",
+            "required": [
+                "price",
+                "service_name",
+                "start_date",
+                "user_id"
+            ],
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Subscription": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SubscriptionPageResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Subscription"
+                    }
+                },
+                "hasNext": {
+                    "type": "boolean"
+                },
+                "hasPrevious": {
+                    "type": "boolean"
+                },
+                "numberOfElements": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "totalElements": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.UpdateSubscriptionInput": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

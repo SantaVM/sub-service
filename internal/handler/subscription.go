@@ -40,15 +40,20 @@ func New(svc *service.SubscriptionService, logger *slog.Logger) *Handler {
 // @Failure 500 {object} ErrorResponse
 // @Router /subscriptions [post]
 func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
+	const op = "Handler.CreateSubscription"
+	log := h.logger.With("op", op)
+	log.InfoContext(r.Context(), "attempting to create a new Subscription")
+
 	var input model.CreateSubscriptionInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		log.ErrorContext(r.Context(), "invalid request body")
 		h.errorResponse(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	subscription, err := h.svc.CreateSubscription(r.Context(), input)
 	if err != nil {
-		h.logger.Error("failed to create subscription", "error", err)
+		log.ErrorContext(r.Context(), "failed to create subscription", "error", err)
 
 		var status int
 
@@ -81,26 +86,33 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} ErrorResponse
 // @Router /subscriptions/{id} [get]
 func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
+	const op = "Handler.GetSubscription"
+	log := h.logger.With("op", op)
+	log.InfoContext(r.Context(), "attempting to get Subscription with ID")
+
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
+		log.ErrorContext(r.Context(), "missing ID parameter")
 		h.errorResponse(w, http.StatusBadRequest, "missing ID parameter")
 		return
 	}
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		log.ErrorContext(r.Context(), "invalid subscription ID format", "id", idStr)
 		h.errorResponse(w, http.StatusBadRequest, "invalid subscription ID format")
 		return
 	}
 
 	subscription, err := h.svc.GetSubscription(r.Context(), uint(id))
 	if err != nil {
-		h.logger.Error("failed to get subscription", "error", err)
+		log.ErrorContext(r.Context(), "failed to get subscription", "error", err)
 		h.errorResponse(w, http.StatusInternalServerError, "failed to get subscription")
 		return
 	}
 
 	if subscription == nil {
+		log.WarnContext(r.Context(), "subscription not found", "id", id)
 		h.errorResponse(w, http.StatusNotFound, "subscription not found")
 		return
 	}
@@ -121,6 +133,10 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} ErrorResponse
 // @Router /subscriptions [get]
 func (h *Handler) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
+	const op = "Handler.ListSubscriptions"
+	log := h.logger.With("op", op)
+	log.InfoContext(r.Context(), "attempting to list Subscriptions")
+
 	query := model.ListSubscriptionsQuery{
 		UserID:      h.getQueryParam(r, "user_id"),
 		ServiceName: h.getQueryParam(r, "service_name"),
@@ -140,7 +156,7 @@ func (h *Handler) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
 
 	subscriptions, err := h.svc.ListSubscriptions(r.Context(), query)
 	if err != nil {
-		h.logger.Error("failed to list subscriptions", "error", err)
+		log.ErrorContext(r.Context(), "failed to list subscriptions", "error", err)
 		h.errorResponse(w, http.StatusInternalServerError, "failed to list subscriptions")
 		return
 	}
@@ -162,27 +178,34 @@ func (h *Handler) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} ErrorResponse
 // @Router /subscriptions/{id} [put]
 func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
+	const op = "Handler.UpdateSubscription"
+	log := h.logger.With("op", op)
+	log.InfoContext(r.Context(), "attempting to update Subscription")
+
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
+		log.ErrorContext(r.Context(), "missing ID parameter")
 		h.errorResponse(w, http.StatusBadRequest, "missing ID parameter")
 		return
 	}
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		log.ErrorContext(r.Context(), "invalid subscription ID format", "id", idStr)
 		h.errorResponse(w, http.StatusBadRequest, "invalid subscription ID format")
 		return
 	}
 
 	var input model.UpdateSubscriptionInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		log.ErrorContext(r.Context(), "invalid request body", "error", err)
 		h.errorResponse(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	subscription, err := h.svc.UpdateSubscription(r.Context(), uint(id), input)
 	if err != nil {
-		h.logger.Error("failed to update subscription", "error", err)
+		log.ErrorContext(r.Context(), "failed to update subscription", "error", err)
 
 		var status int
 
@@ -202,6 +225,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if subscription == nil {
+		log.WarnContext(r.Context(), "subscription not found", "id", id)
 		h.errorResponse(w, http.StatusNotFound, "subscription not found")
 		return
 	}
@@ -219,23 +243,31 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} ErrorResponse
 // @Router /subscriptions/{id} [delete]
 func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
+	const op = "Handler.DeleteSubscription"
+	log := h.logger.With("op", op)
+	log.InfoContext(r.Context(), "attempting to delete Subscription")
+
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
+		log.ErrorContext(r.Context(), "missing ID parameter")
 		h.errorResponse(w, http.StatusBadRequest, "missing ID parameter")
 		return
 	}
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		log.ErrorContext(r.Context(), "invalid subscription ID format", "id", idStr)
 		h.errorResponse(w, http.StatusBadRequest, "invalid subscription ID format")
 		return
 	}
 
 	if err := h.svc.DeleteSubscription(r.Context(), uint(id)); err != nil {
-		h.logger.Error("failed to delete subscription", "reason", err)
+
 		if strings.Contains(err.Error(), "not found") {
+			log.WarnContext(r.Context(), "subscription not found", "id", id)
 			h.errorResponse(w, http.StatusNotFound, err.Error())
 		} else {
+			log.ErrorContext(r.Context(), "failed to delete subscription", "error", err)
 			h.errorResponse(w, http.StatusInternalServerError, "failed to delete subscription")
 		}
 		return
@@ -258,6 +290,10 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} ErrorResponse
 // @Router /subscriptions/total [get]
 func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) {
+	const op = "Handler.GetTotalCost"
+	log := h.logger.With("op", op)
+	log.InfoContext(r.Context(), "attempting to get total cost")
+
 	query := model.TotalCostQuery{
 		UserID:      h.getQueryParam(r, "user_id"),
 		ServiceName: h.getQueryParam(r, "service_name"),
@@ -266,7 +302,7 @@ func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) {
 	if query.UserID != nil {
 		_, err := uuid.Parse(*query.UserID)
 		if err != nil {
-			h.logger.Error("parsing failed for user_id", "error", err)
+			log.ErrorContext(r.Context(), "parsing failed for user_id", "error", err)
 			h.errorResponse(w, http.StatusBadRequest, "invalid user_id format, expected UUID")
 			return
 		}
@@ -274,18 +310,18 @@ func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) {
 
 	if startDateStr := r.URL.Query().Get("start_date"); startDateStr != "" {
 		if err := query.StartDate.Parse(startDateStr); err != nil {
-			h.logger.Error("parsing failed for start_date", "error", err)
+			log.ErrorContext(r.Context(), "parsing failed for start_date", "error", err)
 			h.errorResponse(w, http.StatusBadRequest, "invalid start_date format, expected MM-YYYY")
 			return
 		}
 	} else {
-		h.logger.Error("start_date is required", "error", startDateStr)
+		log.ErrorContext(r.Context(), "start_date is required", "start_date", startDateStr)
 		h.errorResponse(w, http.StatusBadRequest, "start_date is required")
 	}
 
 	if endDateStr := r.URL.Query().Get("end_date"); endDateStr != "" {
 		if err := query.EndDate.Parse(endDateStr); err != nil {
-			h.logger.Error("parsing failed for end_date", "value", err)
+			log.ErrorContext(r.Context(), "parsing failed for end_date", "error", err)
 			h.errorResponse(w, http.StatusBadRequest, "invalid end_date format, expected MM-YYYY")
 			return
 		}
@@ -295,21 +331,17 @@ func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) {
 
 	// Проверка обязательных параметров и бизнес-ограничений
 	if !query.StartDate.Time.Before(query.EndDate.Time) {
-		h.logger.Error("start_date must be before end_date", "error", "GetTotalCost")
+		log.ErrorContext(r.Context(), "start_date must be before end_date",
+			"start_date", query.StartDate,
+			"end_date", query.EndDate,
+		)
 		h.errorResponse(w, http.StatusBadRequest, "start_date must be before end_date")
 		return
 	}
 
-	// TODO: ??
-	// if (query.UserID == nil || *query.UserID == "") && (query.ServiceName == nil || *query.ServiceName == "") {
-	// 	h.logger.Error("user_id or service_name must not be empty", "error", "GetTotalCost")
-	// 	h.errorResponse(w, http.StatusBadRequest, "user_id or service_name must not be empty")
-	// 	return
-	// }
-
 	totalCost, err := h.svc.GetTotalCost(r.Context(), query)
 	if err != nil {
-		h.logger.Error("failed to get total cost", "error", err)
+		log.ErrorContext(r.Context(), "failed to get total cost", "error", err)
 		h.errorResponse(w, http.StatusInternalServerError, "failed to calculate total cost")
 		return
 	}
@@ -326,9 +358,14 @@ func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /uuid [get]
 func (h *Handler) GetUUID(w http.ResponseWriter, r *http.Request) {
+	const op = "Handler.GetUUID"
+	log := h.logger.With("op", op)
+	log.InfoContext(r.Context(), "attempting to get UUID")
+
 	generatedUUID, err := uuid.NewV7()
 
 	if err != nil {
+		log.ErrorContext(r.Context(), "failed to generate UUID")
 		h.errorResponse(w, http.StatusInternalServerError, "failed to generate UUID")
 		return
 	}
@@ -350,10 +387,13 @@ type TotalCostResponse struct {
 }
 
 func (h *Handler) jsonResponse(w http.ResponseWriter, status int, data interface{}) {
+	const op = "Handler.jsonResponse"
+	log := h.logger.With("op", op)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		h.logger.Error("failed to encode response", "error", err)
+		log.Error("failed to encode response", "error", err)
 	}
 }
 

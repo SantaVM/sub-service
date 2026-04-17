@@ -13,18 +13,21 @@ type Config struct {
 func New(cfg Config) *slog.Logger {
 	env := strings.ToLower(cfg.Env)
 
-	var handler slog.Handler
+	var baseHandler slog.Handler
 
 	switch env {
 	case "prod":
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		baseHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelInfo,
 		})
 	default:
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		baseHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})
 	}
+
+	// оборачиваем нашим Context handler-ом
+	handler := NewContextHandler(baseHandler)
 
 	return slog.New(handler)
 }

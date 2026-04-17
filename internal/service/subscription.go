@@ -20,13 +20,14 @@ func New(repo *repository.SubscriptionRepository, logger *slog.Logger) *Subscrip
 	}
 }
 
-// TODO: move to handler
 func (s *SubscriptionService) CreateSubscription(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error) {
-	s.logger.InfoContext(ctx, "creating subscription via service", "service_name", input.ServiceName)
+	const op = "SubscriptionService.CreateSubscription"
+	log := s.logger.With("op", op)
+	log.DebugContext(ctx, "creating subscription via service")
 
 	subsciption, err := input.ToDomain()
 	if err != nil {
-		s.logger.ErrorContext(ctx, "error convertion to domain", "create_sub", input.UserID)
+		log.ErrorContext(ctx, "error convertion to domain", "error", err)
 		return nil, err
 	}
 
@@ -34,15 +35,21 @@ func (s *SubscriptionService) CreateSubscription(ctx context.Context, input mode
 }
 
 func (s *SubscriptionService) GetSubscription(ctx context.Context, id uint) (*model.Subscription, error) {
-	s.logger.InfoContext(ctx, "getting subscription via service", "subscription_id", id)
+	const op = "SubscriptionService.GetSubscription"
+	log := s.logger.With("op", op)
+
+	log.DebugContext(ctx, "getting subscription via service")
 	return s.repo.GetByID(ctx, id)
 }
 
-// []*model.Subscription
 func (s *SubscriptionService) ListSubscriptions(ctx context.Context, query model.ListSubscriptionsQuery) (*model.Page[*model.Subscription], error) {
-	s.logger.InfoContext(ctx, "listing subscriptions via service")
+	const op = "SubscriptionService.ListSubscriptions"
+	log := s.logger.With("op", op)
+
+	log.DebugContext(ctx, "listing subscriptions via service")
 
 	// Установка значений по умолчанию
+	// TODO: move to handler?
 	if query.Size <= 0 {
 		query.Size = 10
 	}
@@ -59,11 +66,14 @@ func (s *SubscriptionService) ListSubscriptions(ctx context.Context, query model
 }
 
 func (s *SubscriptionService) UpdateSubscription(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
-	s.logger.InfoContext(ctx, "updating subscription via service", "subscription_id", id)
+	const op = "SubscriptionService.UpdateSubscription"
+	log := s.logger.With("op", op)
+
+	log.DebugContext(ctx, "updating subscription via service")
 
 	update, err := input.ToDomain()
 	if err != nil {
-		s.logger.ErrorContext(ctx, "error convertion to domain", "update_sub", id)
+		log.ErrorContext(ctx, "error convertion to domain", "error", err)
 		return nil, err
 	}
 
@@ -71,11 +81,17 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, id uint, i
 }
 
 func (s *SubscriptionService) DeleteSubscription(ctx context.Context, id uint) error {
-	s.logger.InfoContext(ctx, "deleting subscription via service", "subscription_id", id)
+	const op = "SubscriptionService.DeleteSubscription"
+	log := s.logger.With("op", op)
+
+	log.DebugContext(ctx, "deleting subscription via service")
 	return s.repo.Delete(ctx, id)
 }
 
 func (s *SubscriptionService) GetTotalCost(ctx context.Context, query model.TotalCostQuery) (int, error) {
-	s.logger.InfoContext(ctx, "calculating total cost via service")
+	const op = "SubscriptionService.GetTotalCost"
+	log := s.logger.With("op", op)
+
+	log.DebugContext(ctx, "calculating total cost via service")
 	return s.repo.GetTotalCost(ctx, query)
 }

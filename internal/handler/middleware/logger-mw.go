@@ -15,17 +15,25 @@ func LoggerMw(log *slog.Logger) func(http.Handler) http.Handler {
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
+			log.InfoContext(
+				r.Context(),
+				"http request",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"remote_ip", r.RemoteAddr,
+				// "user_agent", r.UserAgent(),
+			)
+
 			next.ServeHTTP(ww, r)
 
-			log.Info("http request",
+			log.InfoContext(
+				r.Context(),
+				"http request completed",
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", ww.Status(),
 				"bytes", ww.BytesWritten(),
 				"duration", time.Since(start).String(),
-				"request_id", middleware.GetReqID(r.Context()), // передаём через контекст
-				"remote_ip", r.RemoteAddr,
-				// "user_agent", r.UserAgent(),
 			)
 		})
 	}

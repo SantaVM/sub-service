@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"sub-service/docs"
 	"sub-service/internal/handler"
+	mymw "sub-service/internal/handler/middleware"
 	"sub-service/internal/infrastructure/config"
 	"sub-service/internal/infrastructure/database"
 	"sub-service/internal/infrastructure/logger"
@@ -58,7 +59,7 @@ func New() (*App, error) {
 	h := handler.New(svc, log)
 
 	// router
-	router := newRouter(h, cfg)
+	router := newRouter(h, cfg, log)
 
 	// server
 	srv := &http.Server{
@@ -111,12 +112,12 @@ func (a *App) Close() error {
 	return nil
 }
 
-func newRouter(h *handler.Handler, cfg *config.Config) http.Handler {
+func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger) // TODO: remove
+	r.Use(mymw.LoggerMw(log))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second)) // TODO: remove?
 

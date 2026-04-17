@@ -118,8 +118,7 @@ func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Ha
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(mymw.LoggerMw(log))
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second)) // TODO: remove?
+	r.Use(mymw.Recoverer(log))
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},

@@ -12,7 +12,31 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-func New(databaseURL string) (*sql.DB, error) {
+type DBWrapper struct {
+	DB *sql.DB
+}
+
+func New(databaseURL string) (*DBWrapper, error) {
+	db, err := sql.Open("postgres", databaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	if err = db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+
+	return &DBWrapper{DB: db}, nil
+}
+
+func (d *DBWrapper) Close() error {
+	return d.DB.Close()
+}
+
+func New_old(databaseURL string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

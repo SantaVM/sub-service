@@ -15,7 +15,7 @@ type Config struct {
 	DBName      string
 	DBUser      string
 	DBPassword  string
-	LogLevel    string
+	Env         string
 }
 
 func Load() (*Config, error) {
@@ -29,7 +29,7 @@ func Load() (*Config, error) {
 		DBName:     getEnv("DB_NAME", "subservice"),
 		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		LogLevel:   getEnv("LOG_LEVEL", "info"),
+		Env:        getEnv("GO_ENV", "prod"),
 	}
 
 	// Формирование Database URL

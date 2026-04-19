@@ -13,6 +13,7 @@ import (
 	"sub-service/internal/infrastructure/config"
 	"sub-service/internal/infrastructure/database"
 	"sub-service/internal/infrastructure/logger"
+	myv "sub-service/internal/infrastructure/validator"
 	"sub-service/internal/repository"
 	"sub-service/internal/service"
 	"syscall"
@@ -53,10 +54,13 @@ func New() (*App, error) {
 		return nil, fmt.Errorf("failed to migrate: %w", err)
 	}
 
+	// validator
+	v := myv.New()
+
 	// DI (ручной)
 	repo := repository.New(db.DB, log)
 	svc := service.New(repo, log)
-	h := handler.New(svc, log)
+	h := handler.New(svc, log, v)
 
 	// router
 	router := newRouter(h, cfg, log)
@@ -121,11 +125,17 @@ func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Ha
 	r.Use(mymw.Recoverer(log))
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"}, // TODO: ??
-		AllowCredentials: true,
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders: []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"X-CSRF-Token",
+			"X-Requested-With",
+		},
+		ExposedHeaders:   []string{},
+		AllowCredentials: false,
 		MaxAge:           300,
 	}))
 

@@ -15,8 +15,7 @@ import (
 
 func main() {
 
-	// TODO: struct logging and chi logger
-	// TODO: throttler? Timeout?
+	// TODO: rate limiter?
 	// TODO: interfaces? structure?
 	// TODO: refactor validation
 	// TODO: tests

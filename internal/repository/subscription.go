@@ -240,7 +240,7 @@ func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input mode
 		RETURNING id, service_name, price, user_id, start_date, end_date, created_at, updated_at
 	`, joinStrings(setClauses, ", "), argNum)
 
-	// r.logger.InfoContext(ctx, "update", "query:", query)
+	// r.logger.DebugContext(ctx, "update", "query:", query)
 
 	sub := &model.Subscription{}
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
@@ -292,7 +292,7 @@ func (r *SubscriptionRepository) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (r *SubscriptionRepository) GetTotalCost(ctx context.Context, query model.TotalCostQuery) (int, error) {
+func (r *SubscriptionRepository) GetTotalCost(ctx context.Context, query model.TotalCostReq) (int, error) {
 	r.logger.InfoContext(
 		ctx,
 		"calculating total cost",

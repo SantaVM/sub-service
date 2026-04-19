@@ -4,6 +4,10 @@ definitions:
     properties:
       error:
         type: string
+      errors:
+        items:
+          $ref: '#/definitions/model.ValidationError'
+        type: array
     type: object
   handler.TotalCostResponse:
     properties:
@@ -18,6 +22,7 @@ definitions:
         minimum: 0
         type: integer
       service_name:
+        minLength: 2
         type: string
       start_date:
         type: string
@@ -75,8 +80,16 @@ definitions:
         minimum: 0
         type: integer
       service_name:
+        minLength: 2
         type: string
       start_date:
+        type: string
+    type: object
+  model.ValidationError:
+    properties:
+      field:
+        type: string
+      message:
         type: string
     type: object
 host: localhost:8080
@@ -99,14 +112,16 @@ paths:
         name: service_name
         type: string
       - default: 10
-        description: Количество записей на странице
+        description: Количество записей на странице (максимум 100)
         in: query
         name: size
+        required: true
         type: integer
       - default: 1
         description: Страница (начиная с 1)
         in: query
         name: page
+        required: true
         type: integer
       produces:
       - application/json

@@ -48,20 +48,6 @@ func (s *SubscriptionService) ListSubscriptions(ctx context.Context, query model
 
 	log.DebugContext(ctx, "listing subscriptions via service")
 
-	// Установка значений по умолчанию
-	// TODO: move to handler?
-	if query.Size <= 0 {
-		query.Size = 10
-	}
-
-	if query.Size > 100 {
-		query.Size = 100
-	}
-
-	if query.Page < 1 {
-		query.Page = 1
-	}
-
 	return s.repo.List(ctx, query)
 }
 
@@ -93,5 +79,12 @@ func (s *SubscriptionService) GetTotalCost(ctx context.Context, query model.Tota
 	log := s.logger.With("op", op)
 
 	log.DebugContext(ctx, "calculating total cost via service")
-	return s.repo.GetTotalCost(ctx, query)
+
+	dto, err := query.ToDomain()
+	if err != nil {
+		log.ErrorContext(ctx, "error convertion to domain", "error", err)
+		return -1, err
+	}
+
+	return s.repo.GetTotalCost(ctx, *dto)
 }

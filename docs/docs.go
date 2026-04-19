@@ -41,16 +41,18 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "default": 10,
-                        "description": "Количество записей на странице",
+                        "description": "Количество записей на странице (максимум 100)",
                         "name": "size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "default": 1,
                         "description": "Страница (начиная с 1)",
                         "name": "page",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -338,6 +340,12 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "type": "string"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ValidationError"
+                    }
                 }
             }
         },
@@ -366,7 +374,8 @@ const docTemplate = `{
                     "minimum": 0
                 },
                 "service_name": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 2
                 },
                 "start_date": {
                     "type": "string"
@@ -445,9 +454,21 @@ const docTemplate = `{
                     "minimum": 0
                 },
                 "service_name": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 2
                 },
                 "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ValidationError": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "message": {
                     "type": "string"
                 }
             }

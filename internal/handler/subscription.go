@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -16,8 +17,19 @@ import (
 	"github.com/google/uuid"
 )
 
+type Service interface {
+	CreateSubscription(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error)
+	GetSubscription(ctx context.Context, id uint) (*model.Subscription, error)
+	ListSubscriptions(ctx context.Context, query model.ListSubscriptionsQuery) (*model.Page[*model.Subscription], error)
+	UpdateSubscription(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error)
+	DeleteSubscription(ctx context.Context, id uint) error
+	GetTotalCost(ctx context.Context, query model.TotalCostQuery) (int, error)
+}
+
+var _ Service = (*service.SubscriptionService)(nil)
+
 type Handler struct {
-	svc       *service.SubscriptionService
+	svc       Service
 	logger    *slog.Logger
 	validator *myv.Validator
 }
@@ -312,10 +324,16 @@ func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) {
 	log := h.logger.With("op", op)
 	log.DebugContext(r.Context(), "attempting to get total cost")
 
+	startDate := h.getQueryParam(r, "start_date")
+	if startDate == nil {
+		h.errorMessage(w, http.StatusBadRequest, "start_date is required")
+		return
+	}
+
 	query := model.TotalCostQuery{
 		UserID:      h.getQueryParam(r, "user_id"),
 		ServiceName: h.getQueryParam(r, "service_name"),
-		StartDate:   *h.getQueryParam(r, "start_date"),
+		StartDate:   *startDate,
 		EndDate:     h.getQueryParam(r, "end_date"),
 	}
 
@@ -324,46 +342,6 @@ func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) {
 		h.validationError(w, err)
 		return
 	}
-
-	// if query.UserID != nil {
-	// 	_, err := uuid.Parse(*query.UserID)
-	// 	if err != nil {
-	// 		log.ErrorContext(r.Context(), "parsing failed for user_id", "error", err)
-	// 		h.errorResponse(w, http.StatusBadRequest, "invalid user_id format, expected UUID")
-	// 		return
-	// 	}
-	// }
-
-	// if startDateStr := r.URL.Query().Get("start_date"); startDateStr != "" {
-	// 	if err := query.StartDate.Parse(startDateStr); err != nil {
-	// 		log.ErrorContext(r.Context(), "parsing failed for start_date", "error", err)
-	// 		h.errorResponse(w, http.StatusBadRequest, "invalid start_date format, expected MM-YYYY")
-	// 		return
-	// 	}
-	// } else {
-	// 	log.ErrorContext(r.Context(), "start_date is required", "start_date", startDateStr)
-	// 	h.errorResponse(w, http.StatusBadRequest, "start_date is required")
-	// }
-
-	// if endDateStr := r.URL.Query().Get("end_date"); endDateStr != "" {
-	// 	if err := query.EndDate.Parse(endDateStr); err != nil {
-	// 		log.ErrorContext(r.Context(), "parsing failed for end_date", "error", err)
-	// 		h.errorResponse(w, http.StatusBadRequest, "invalid end_date format, expected MM-YYYY")
-	// 		return
-	// 	}
-	// } else {
-	// 	query.EndDate.Time = query.StartDate.Time.AddDate(0, 1, 0)
-	// }
-
-	// // Проверка обязательных параметров и бизнес-ограничений
-	// if !query.StartDate.Time.Before(query.EndDate.Time) {
-	// 	log.ErrorContext(r.Context(), "start_date must be before end_date",
-	// 		"start_date", query.StartDate,
-	// 		"end_date", query.EndDate,
-	// 	)
-	// 	h.errorResponse(w, http.StatusBadRequest, "start_date must be before end_date")
-	// 	return
-	// }
 
 	totalCost, err := h.svc.GetTotalCost(r.Context(), query)
 	if err != nil {

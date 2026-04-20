@@ -16,9 +16,6 @@ import (
 func main() {
 
 	// TODO: rate limiter?
-	// TODO: interfaces? structure?
-	// TODO: refactor validation
-	// TODO: tests
 
 	application, err := app.New()
 	if err != nil {

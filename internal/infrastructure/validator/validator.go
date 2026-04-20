@@ -114,29 +114,22 @@ func validateStartEndDate(sl validator.StructLevel) {
 		return
 	}
 
-	var start *time.Time
-
-	if query.GetStartDate() != nil {
-
-		s, err := time.Parse("01-2006", *query.GetStartDate())
-		if err != nil {
-			return // уже поймает monthyear validator
-		}
-
-		start = &s
+	if query.GetStartDate() == nil {
+		return
 	}
 
-	var end time.Time
+	start, err := time.Parse("01-2006", *query.GetStartDate())
+	if err != nil {
+		return
+	}
 
-	if start != nil && query.GetEndDate() != nil {
-		e, err := time.Parse("01-2006", *query.GetEndDate())
-		if err != nil {
-			return
-		}
-		end = e
-	} else {
-		// default: +1 месяц
-		end = start.AddDate(0, 1, 0)
+	if query.GetEndDate() == nil {
+		return
+	}
+
+	end, err := time.Parse("01-2006", *query.GetEndDate())
+	if err != nil {
+		return
 	}
 
 	// сама проверка

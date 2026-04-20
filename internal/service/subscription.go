@@ -8,8 +8,19 @@ import (
 	"sub-service/internal/repository"
 )
 
+type Repository interface {
+	Create(ctx context.Context, input model.CreateSubscription) (*model.Subscription, error)
+	GetByID(ctx context.Context, id uint) (*model.Subscription, error)
+	List(ctx context.Context, query model.ListSubscriptionsQuery) (*model.Page[*model.Subscription], error)
+	Update(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error)
+	Delete(ctx context.Context, id uint) error
+	GetTotalCost(ctx context.Context, query model.TotalCostReq) (int, error)
+}
+
+var _ Repository = (*repository.SubscriptionRepository)(nil)
+
 type SubscriptionService struct {
-	repo   *repository.SubscriptionRepository
+	repo   Repository
 	logger *slog.Logger
 }
 

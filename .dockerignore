@@ -1,7 +1,6 @@
 bin/
 vendor/
-.env
-docker-compose.yml
-Dockerfile
 .task/
 .vscode/
+.git
+.gitignore

@@ -1,13 +1,13 @@
 services:
   postgres:
-    image: postgres:17-alpine
-    container_name: sub-service-postgres
+    image: postgres:17.9-alpine3.23
     environment:
       POSTGRES_DB: ${DB_NAME:-subservice}
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    restart: unless-stopped
+    networks:
+      - internal    
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,34 +19,31 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: sub-service-app
-    environment:
-      PORT: ${PORT:-8080}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-subservice}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+    env_file:
+      - .env.docker
     ports:
       - "${PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-
-  swagger:
-    image: swaggerapi/swagger-ui
-    container_name: sub-service-swagger
-    ports:
-      - "8081:8080"
-    environment:
-      SWAGGER_JSON: /docs/swagger.json
-    volumes:
-      - ./docs:/docs
-    depends_on:
-      - app
+    networks:
+      - internal
+      - public
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
+
+networks:
+  internal:
+    driver: bridge
+    internal: true   # недоступна извне
+
+  public:
+    driver: bridge
+

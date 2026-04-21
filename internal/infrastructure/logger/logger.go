@@ -20,6 +20,10 @@ func New(cfg Config) *slog.Logger {
 		baseHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelInfo,
 		})
+	case "docker":
+		baseHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		})
 	default:
 		baseHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,

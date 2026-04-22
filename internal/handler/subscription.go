@@ -64,11 +64,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	log.DebugContext(r.Context(), "attempting to create a new Subscription")
 
 	var input model.CreateSubscriptionInput
-	// if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-	// 	log.ErrorContext(r.Context(), "invalid request body")
-	// 	h.errorResponse(w, http.StatusBadRequest, "invalid request body")
-	// 	return
-	// }
+
 	if err := h.validator.BindAndValidate(r, &input); err != nil {
 		log.ErrorContext(r.Context(), "invalid request body")
 		h.validationError(w, err)

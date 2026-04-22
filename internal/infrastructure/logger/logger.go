@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Env string // local | prod
+	Env string // local | prod | docker
 }
 
 func New(cfg Config) *slog.Logger {
@@ -33,5 +33,9 @@ func New(cfg Config) *slog.Logger {
 	// оборачиваем нашим Context handler-ом
 	handler := NewContextHandler(baseHandler)
 
-	return slog.New(handler)
+	logger := slog.New(handler)
+
+	slog.SetDefault(logger)
+
+	return logger
 }

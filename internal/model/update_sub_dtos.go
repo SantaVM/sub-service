@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// TODO: implement Nullable fields
 type UpdateSubscriptionInput struct {
 	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=2"`
 	Price       *int    `json:"price,omitempty" validate:"omitempty,min=0"`
@@ -36,6 +37,7 @@ func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
 	}
 
 	// --- StartDate ---
+	// TODO: refactor
 	var startDate *MonthYear
 	if input.StartDate != nil {
 		trimmed := strings.TrimSpace(*input.StartDate)
@@ -50,6 +52,7 @@ func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
 	}
 
 	// --- EndDate ---
+	// TODO: refactor
 	var endDate *MonthYear
 	if input.EndDate != nil {
 		trimmed := strings.TrimSpace(*input.EndDate)

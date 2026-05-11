@@ -67,10 +67,3 @@ func (input CreateSubscriptionInput) ToDomain() (*CreateSubscription, error) {
 		EndDate:     endDate,
 	}, nil
 }
-
-type ListSubscriptionsQuery struct {
-	UserID      *string `validate:"omitempty,uuid"`
-	ServiceName *string
-	Size        int `validate:"required,min=1,max=100"`
-	Page        int `validate:"required,min=1"`
-}

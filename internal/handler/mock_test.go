@@ -6,17 +6,17 @@ import (
 )
 
 type mockService struct {
-	CreateSubscriptionFn func(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error)
+	CreateSubscriptionFn func(ctx context.Context, input model.CreateSubscription) (*model.Subscription, error)
 	GetSubscriptionFn    func(ctx context.Context, id uint) (*model.Subscription, error)
 	ListSubscriptionsFn  func(ctx context.Context, query model.ListSubscriptionsQuery) (*model.Page[*model.Subscription], error)
-	UpdateSubscriptionFn func(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error)
+	UpdateSubscriptionFn func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error)
 	DeleteSubscriptionFn func(ctx context.Context, id uint) error
-	GetTotalCostFn       func(ctx context.Context, query model.TotalCostQuery) (int, error)
+	GetTotalCostFn       func(ctx context.Context, query model.TotalCostReq) (int, error)
 }
 
 var _ Service = (*mockService)(nil)
 
-func (m *mockService) CreateSubscription(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error) {
+func (m *mockService) CreateSubscription(ctx context.Context, input model.CreateSubscription) (*model.Subscription, error) {
 	if m.CreateSubscriptionFn != nil {
 		return m.CreateSubscriptionFn(ctx, input)
 	}
@@ -37,7 +37,7 @@ func (m *mockService) ListSubscriptions(ctx context.Context, query model.ListSub
 	panic("ListSubscriptions not implemented")
 }
 
-func (m *mockService) UpdateSubscription(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
+func (m *mockService) UpdateSubscription(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 	if m.UpdateSubscriptionFn != nil {
 		return m.UpdateSubscriptionFn(ctx, id, input)
 	}
@@ -51,7 +51,7 @@ func (m *mockService) DeleteSubscription(ctx context.Context, id uint) error {
 	panic("DeleteSubscription not implemented")
 }
 
-func (m *mockService) GetTotalCost(ctx context.Context, query model.TotalCostQuery) (int, error) {
+func (m *mockService) GetTotalCost(ctx context.Context, query model.TotalCostReq) (int, error) {
 	if m.GetTotalCostFn != nil {
 		return m.GetTotalCostFn(ctx, query)
 	}

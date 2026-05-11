@@ -67,8 +67,9 @@ func New() (*App, error) {
 
 	// server
 	srv := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: router,
+		Addr:              ":" + cfg.Port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	return &App{
@@ -123,6 +124,7 @@ func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Ha
 	r.Use(middleware.RealIP)
 	r.Use(mymw.LoggerMw(log))
 	r.Use(mymw.Recoverer(log))
+	r.Use(middleware.Timeout(3 * time.Second)) // устанавливаем таймауты запросов, в т.ч. на запросы в БД
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -148,21 +150,21 @@ func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Ha
 	// health
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 
 	// routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/subscriptions", func(r chi.Router) {
-			r.Post("/", h.CreateSubscription)
-			r.Get("/", h.ListSubscriptions)
-			r.Get("/{id}", h.GetSubscription)
-			r.Put("/{id}", h.UpdateSubscription)
-			r.Delete("/{id}", h.DeleteSubscription)
+			r.Post("/", handler.Adapt(h.CreateSubscription))
+			r.Get("/", handler.Adapt(h.ListSubscriptions))
+			r.Get("/total", handler.Adapt(h.GetTotalCost))
+			r.Get("/{id}", handler.Adapt(h.GetSubscription))
+			r.Put("/{id}", handler.Adapt(h.UpdateSubscription))
+			r.Delete("/{id}", handler.Adapt(h.DeleteSubscription))
 		})
 
-		r.Get("/subscriptions/total", h.GetTotalCost)
-		r.Get("/uuid", h.GetUUID)
+		r.Get("/uuid", handler.Adapt(h.GetUUID))
 	})
 
 	return r

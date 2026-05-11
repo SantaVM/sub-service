@@ -186,7 +186,7 @@
                 "summary": "Получение подписки по ID",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID подписки",
                         "name": "id",
                         "in": "path",
@@ -228,7 +228,7 @@
                 "summary": "Обновление подписки",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID подписки",
                         "name": "id",
                         "in": "path",
@@ -279,7 +279,7 @@
                 "summary": "Удаление подписки",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID подписки",
                         "name": "id",
                         "in": "path",

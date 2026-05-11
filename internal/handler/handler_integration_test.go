@@ -29,7 +29,11 @@ func TestCreateSubscription_Integration(t *testing.T) {
 
 	db, err := sql.Open("postgres", testDB.URI)
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	}()
 
 	// 2. Миграции
 	err = testutil.RunGooseMigrations(db, "../../internal/infrastructure/database/migrations")

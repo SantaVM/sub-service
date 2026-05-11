@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"sub-service/internal/model"
 
@@ -84,7 +85,8 @@ func (r *SubscriptionRepository) GetByID(ctx context.Context, id uint) (*model.S
 	if err != nil {
 		if err == sql.ErrNoRows {
 			r.logger.WarnContext(ctx, "subscription not found", "subscription_id", id)
-			return nil, nil
+
+			return nil, model.ErrNotFound
 		}
 		r.logger.ErrorContext(ctx, "failed to get subscription", "error", err)
 		return nil, fmt.Errorf("failed to get subscription: %w", err)
@@ -105,7 +107,7 @@ func (r *SubscriptionRepository) List(ctx context.Context, query model.ListSubsc
 		WHERE 1=1
 	`
 
-	args := []interface{}{}
+	args := []any{}
 	argNum := 1
 
 	if query.UserID != nil {
@@ -197,6 +199,8 @@ func (r *SubscriptionRepository) List(ctx context.Context, query model.ListSubsc
 func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 	r.logger.InfoContext(ctx, "updating subscription", "subscription_id", id)
 
+	// TODO: refactor to func Named(name string, value any) ?
+
 	setClauses := []string{}
 	args := []interface{}{}
 	argNum := 1
@@ -238,9 +242,7 @@ func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input mode
 		SET %s
 		WHERE id = $%d
 		RETURNING id, service_name, price, user_id, start_date, end_date, created_at, updated_at
-	`, joinStrings(setClauses, ", "), argNum)
-
-	// r.logger.DebugContext(ctx, "update", "query:", query)
+	`, strings.Join(setClauses, ", "), argNum)
 
 	sub := &model.Subscription{}
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
@@ -257,7 +259,7 @@ func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input mode
 	if err != nil {
 		if err == sql.ErrNoRows {
 			r.logger.WarnContext(ctx, "subscription not found", "subscription_id", id)
-			return nil, nil
+			return nil, model.ErrNotFound
 		}
 		r.logger.ErrorContext(ctx, "failed to update subscription", "error", err)
 		return nil, mapPostgresError(err)
@@ -285,7 +287,7 @@ func (r *SubscriptionRepository) Delete(ctx context.Context, id uint) error {
 
 	if rowsAffected == 0 {
 		r.logger.WarnContext(ctx, "subscription not found", "subscription_id", id)
-		return fmt.Errorf("subscription not found with id: %d", id)
+		return fmt.Errorf("subscription with id: %d not found %w", id, model.ErrNotFound)
 	}
 
 	r.logger.InfoContext(ctx, "subscription deleted successfully", "subscription_id", id)
@@ -355,17 +357,6 @@ func (r *SubscriptionRepository) GetTotalCost(ctx context.Context, query model.T
 
 	r.logger.InfoContext(ctx, "total cost calculated successfully", "total_cost", totalCost)
 	return totalCost, nil
-}
-
-func joinStrings(strs []string, sep string) string {
-	result := ""
-	for i, s := range strs {
-		if i > 0 {
-			result += sep
-		}
-		result += s
-	}
-	return result
 }
 
 func mapPostgresError(err error) error {

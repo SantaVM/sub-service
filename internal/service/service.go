@@ -31,18 +31,12 @@ func New(repo *repository.SubscriptionRepository, logger *slog.Logger) *Subscrip
 	}
 }
 
-func (s *SubscriptionService) CreateSubscription(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error) {
+func (s *SubscriptionService) CreateSubscription(ctx context.Context, input model.CreateSubscription) (*model.Subscription, error) {
 	const op = "SubscriptionService.CreateSubscription"
 	log := s.logger.With("op", op)
 	log.DebugContext(ctx, "creating subscription via service")
 
-	subsciption, err := input.ToDomain()
-	if err != nil {
-		log.ErrorContext(ctx, "error convertion to domain", "error", err)
-		return nil, err
-	}
-
-	return s.repo.Create(ctx, *subsciption)
+	return s.repo.Create(ctx, input)
 }
 
 func (s *SubscriptionService) GetSubscription(ctx context.Context, id uint) (*model.Subscription, error) {
@@ -62,19 +56,13 @@ func (s *SubscriptionService) ListSubscriptions(ctx context.Context, query model
 	return s.repo.List(ctx, query)
 }
 
-func (s *SubscriptionService) UpdateSubscription(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
+func (s *SubscriptionService) UpdateSubscription(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 	const op = "SubscriptionService.UpdateSubscription"
 	log := s.logger.With("op", op)
 
 	log.DebugContext(ctx, "updating subscription via service")
 
-	update, err := input.ToDomain()
-	if err != nil {
-		log.ErrorContext(ctx, "error convertion to domain", "error", err)
-		return nil, err
-	}
-
-	return s.repo.Update(ctx, id, *update)
+	return s.repo.Update(ctx, id, input)
 }
 
 func (s *SubscriptionService) DeleteSubscription(ctx context.Context, id uint) error {
@@ -85,17 +73,16 @@ func (s *SubscriptionService) DeleteSubscription(ctx context.Context, id uint) e
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *SubscriptionService) GetTotalCost(ctx context.Context, query model.TotalCostQuery) (int, error) {
+func (s *SubscriptionService) GetTotalCost(ctx context.Context, query model.TotalCostReq) (int, error) {
 	const op = "SubscriptionService.GetTotalCost"
 	log := s.logger.With("op", op)
 
 	log.DebugContext(ctx, "calculating total cost via service")
 
-	dto, err := query.ToDomain()
-	if err != nil {
-		log.ErrorContext(ctx, "error convertion to domain", "error", err)
-		return -1, err
+	// business logic
+	if query.EndDate == nil {
+		query.EndDate = &model.MonthYear{Time: query.StartDate.Time.AddDate(0, 1, 0)}
 	}
 
-	return s.repo.GetTotalCost(ctx, *dto)
+	return s.repo.GetTotalCost(ctx, query)
 }

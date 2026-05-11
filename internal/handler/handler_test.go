@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sub-service/internal/model"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +25,7 @@ func TestCreateSubscription(t *testing.T) {
 		{
 			name: "success",
 			setup: func(svc *mockService) {
-				svc.CreateSubscriptionFn = func(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error) {
+				svc.CreateSubscriptionFn = func(ctx context.Context, input model.CreateSubscription) (*model.Subscription, error) {
 					return &model.Subscription{ID: 1}, nil
 				}
 			},
@@ -51,7 +52,7 @@ func TestCreateSubscription(t *testing.T) {
 		{
 			name: "validation error",
 			setup: func(svc *mockService) {
-				svc.CreateSubscriptionFn = func(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error) {
+				svc.CreateSubscriptionFn = func(ctx context.Context, input model.CreateSubscription) (*model.Subscription, error) {
 					panic("should not be called")
 				}
 			},
@@ -79,7 +80,7 @@ func TestCreateSubscription(t *testing.T) {
 		{
 			name: "conflict - create",
 			setup: func(svc *mockService) {
-				svc.CreateSubscriptionFn = func(ctx context.Context, input model.CreateSubscriptionInput) (*model.Subscription, error) {
+				svc.CreateSubscriptionFn = func(ctx context.Context, input model.CreateSubscription) (*model.Subscription, error) {
 					return nil, model.ErrSubscriptionOverlap
 				}
 			},
@@ -111,7 +112,7 @@ func TestCreateSubscription(t *testing.T) {
 			h := newTestHandler(mockSvc)
 			resp := NewResponse(t)
 
-			Call(h, h.CreateSubscription, tt.req, resp)
+			Call(h, Adapt(h.CreateSubscription), tt.req, resp)
 
 			tt.check(t, resp)
 		})
@@ -183,14 +184,14 @@ func TestDeleteSubscription(t *testing.T) {
 					Status(http.StatusBadRequest).
 					JSON(&out)
 
-				require.Contains(t, out.Error, "invalid subscription ID format")
+				require.Contains(t, out.Error, "invalid argument")
 			},
 		},
 		{
 			name: "not found",
 			setup: func(svc *mockService) {
 				svc.DeleteSubscriptionFn = func(ctx context.Context, id uint) error {
-					return errors.New("subscription not found")
+					return model.ErrNotFound
 				}
 			},
 			req: NewRequest().
@@ -205,7 +206,7 @@ func TestDeleteSubscription(t *testing.T) {
 					Status(http.StatusNotFound).
 					JSON(&out)
 
-				require.Contains(t, out.Error, "not found")
+				require.Contains(t, out.Error, "entity not found")
 			},
 		},
 		{
@@ -227,7 +228,7 @@ func TestDeleteSubscription(t *testing.T) {
 					Status(http.StatusInternalServerError).
 					JSON(&out)
 
-				require.Contains(t, out.Error, "failed to delete")
+				require.Contains(t, out.Error, "internal server error")
 			},
 		},
 	}
@@ -242,7 +243,7 @@ func TestDeleteSubscription(t *testing.T) {
 			h := newTestHandler(mockSvc)
 			resp := NewResponse(t)
 
-			Call(h, h.DeleteSubscription, tt.req, resp)
+			Call(h, Adapt(h.DeleteSubscription), tt.req, resp)
 
 			tt.check(t, resp)
 		})
@@ -259,7 +260,7 @@ func TestUpdateSubscription(t *testing.T) {
 		{
 			name: "success - update",
 			setup: func(svc *mockService) {
-				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					require.Equal(t, uint(1), id)
 					return &model.Subscription{ID: 1}, nil
 				}
@@ -317,13 +318,13 @@ func TestUpdateSubscription(t *testing.T) {
 					Status(http.StatusBadRequest).
 					JSON(&out)
 
-				require.Contains(t, out.Error, "invalid subscription ID format")
+				require.Contains(t, out.Error, "invalid id parameter")
 			},
 		},
 		{
 			name: "validation error",
 			setup: func(svc *mockService) {
-				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					panic("should not be called")
 				}
 			},
@@ -351,7 +352,7 @@ func TestUpdateSubscription(t *testing.T) {
 		{
 			name: "conflict - overlap",
 			setup: func(svc *mockService) {
-				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					return nil, model.ErrSubscriptionOverlap
 				}
 			},
@@ -372,7 +373,7 @@ func TestUpdateSubscription(t *testing.T) {
 		{
 			name: "invalid date range",
 			setup: func(svc *mockService) {
-				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					return nil, model.ErrInvalidDateRange
 				}
 			},
@@ -393,8 +394,8 @@ func TestUpdateSubscription(t *testing.T) {
 		{
 			name: "not found",
 			setup: func(svc *mockService) {
-				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
-					return nil, nil
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
+					return nil, model.ErrNotFound
 				}
 			},
 			req: NewRequest().
@@ -418,7 +419,7 @@ func TestUpdateSubscription(t *testing.T) {
 		{
 			name: "internal error",
 			setup: func(svc *mockService) {
-				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscriptionInput) (*model.Subscription, error) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					return nil, errors.New("db error")
 				}
 			},
@@ -433,7 +434,7 @@ func TestUpdateSubscription(t *testing.T) {
 			check: func(t *testing.T, resp *Response) {
 				resp.
 					Status(http.StatusInternalServerError).
-					BodyContains("db error")
+					BodyContains("internal server error")
 			},
 		},
 	}
@@ -448,7 +449,7 @@ func TestUpdateSubscription(t *testing.T) {
 			h := newTestHandler(mockSvc)
 			resp := NewResponse(t)
 
-			Call(h, h.UpdateSubscription, tt.req, resp)
+			Call(h, Adapt(h.UpdateSubscription), tt.req, resp)
 
 			tt.check(t, resp)
 		})
@@ -534,7 +535,7 @@ func TestListSubscriptions(t *testing.T) {
 			h := newTestHandler(mockSvc)
 			resp := NewResponse(t)
 
-			Call(h, h.ListSubscriptions, tt.req, resp)
+			Call(h, Adapt(h.ListSubscriptions), tt.req, resp)
 
 			tt.check(t, resp)
 		})
@@ -592,7 +593,7 @@ func TestGetSubscription(t *testing.T) {
 					JSON(&out)
 
 				require.NotEmpty(t, out.Error)
-				require.Contains(t, out.Error, "format")
+				require.Contains(t, out.Error, "invalid id parameter")
 			},
 		},
 		{
@@ -601,7 +602,7 @@ func TestGetSubscription(t *testing.T) {
 				svc.GetSubscriptionFn = func(ctx context.Context, id uint) (*model.Subscription, error) {
 					require.Equal(t, uint(1), id)
 
-					return nil, nil
+					return nil, model.ErrNotFound
 				}
 			},
 			req: NewRequest().
@@ -632,7 +633,7 @@ func TestGetSubscription(t *testing.T) {
 			h := newTestHandler(mockSvc)
 			resp := NewResponse(t)
 
-			Call(h, h.GetSubscription, tt.req, resp)
+			Call(h, Adapt(h.GetSubscription), tt.req, resp)
 
 			tt.check(t, resp)
 		})
@@ -649,9 +650,15 @@ func TestGetTotalCost(t *testing.T) {
 		{
 			name: "success",
 			setup: func(svc *mockService) {
-				svc.GetTotalCostFn = func(ctx context.Context, query model.TotalCostQuery) (int, error) {
+				svc.GetTotalCostFn = func(ctx context.Context, query model.TotalCostReq) (int, error) {
 					require.NotNil(t, query)
-					require.Equal(t, "01-2000", query.StartDate)
+					require.Equal(
+						t,
+						model.MonthYear{
+							Time: time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+						query.StartDate,
+					)
 
 					return 100, nil
 				}
@@ -674,7 +681,7 @@ func TestGetTotalCost(t *testing.T) {
 		{
 			name: "missing start_date",
 			setup: func(svc *mockService) {
-				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostQuery) (int, error) {
+				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostReq) (int, error) {
 					panic("should not be called")
 				}
 			},
@@ -690,9 +697,9 @@ func TestGetTotalCost(t *testing.T) {
 		},
 
 		{
-			name: "validation error - invalid date",
+			name: "validation error - invalid start date",
 			setup: func(svc *mockService) {
-				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostQuery) (int, error) {
+				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostReq) (int, error) {
 					panic("should not be called")
 				}
 			},
@@ -706,6 +713,32 @@ func TestGetTotalCost(t *testing.T) {
 
 				resp.
 					Status(http.StatusBadRequest).
+					BodyContains("must be in MM-YYYY format").
+					JSON(&out)
+
+				require.NotEmpty(t, out.Errors)
+			},
+		},
+
+		{
+			name: "validation error - invalid end date",
+			setup: func(svc *mockService) {
+				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostReq) (int, error) {
+					panic("should not be called")
+				}
+			},
+			req: NewRequest().
+				Method(http.MethodGet).
+				Path("/subscriptions/total").
+				Query("start_date", "01-2020").
+				Query("end_date", "invalid").
+				Build(),
+			check: func(t *testing.T, resp *Response) {
+				var out ErrorResponse
+
+				resp.
+					Status(http.StatusBadRequest).
+					BodyContains("must be in MM-YYYY format").
 					JSON(&out)
 
 				require.NotEmpty(t, out.Errors)
@@ -715,7 +748,7 @@ func TestGetTotalCost(t *testing.T) {
 		{
 			name: "validation error - end before start",
 			setup: func(svc *mockService) {
-				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostQuery) (int, error) {
+				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostReq) (int, error) {
 					panic("should not be called")
 				}
 			},
@@ -739,7 +772,7 @@ func TestGetTotalCost(t *testing.T) {
 		{
 			name: "service error",
 			setup: func(svc *mockService) {
-				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostQuery) (int, error) {
+				svc.GetTotalCostFn = func(ctx context.Context, q model.TotalCostReq) (int, error) {
 					return 0, errors.New("db error")
 				}
 			},
@@ -751,7 +784,7 @@ func TestGetTotalCost(t *testing.T) {
 			check: func(t *testing.T, resp *Response) {
 				resp.
 					Status(http.StatusInternalServerError).
-					BodyContains("failed to calculate total cost")
+					BodyContains("internal server error")
 			},
 		},
 	}
@@ -766,7 +799,7 @@ func TestGetTotalCost(t *testing.T) {
 			h := newTestHandler(mockSvc)
 			resp := NewResponse(t)
 
-			Call(h, h.GetTotalCost, tt.req, resp)
+			Call(h, Adapt(h.GetTotalCost), tt.req, resp)
 
 			tt.check(t, resp)
 		})

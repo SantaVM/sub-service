@@ -1,9 +1,11 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -22,36 +24,22 @@ func New(databaseURL string) (*DBWrapper, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	if err = db.Ping(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	if err = db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(0)
 
 	return &DBWrapper{DB: db}, nil
 }
 
 func (d *DBWrapper) Close() error {
 	return d.DB.Close()
-}
-
-func New_old(databaseURL string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
-	}
-
-	// Проверка соединения
-	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	// Настройка пула соединений
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
-
-	return db, nil
 }
 
 func Migrate(db *sql.DB) error {

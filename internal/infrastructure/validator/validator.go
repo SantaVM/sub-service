@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
 	"sub-service/internal/model"
 	"time"
 
@@ -18,6 +20,15 @@ type Validator struct {
 func New() *Validator {
 	v := validator.New(validator.WithRequiredStructEnabled())
 
+	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		// skip if tag key says it should be ignored
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
 	v.RegisterValidation("monthyear", validateMonthYear)
 
 	v.RegisterStructValidation(validateStartEndDate, model.TotalCostQuery{})
@@ -25,6 +36,27 @@ func New() *Validator {
 	v.RegisterStructValidation(validateStartEndDate, model.CreateSubscriptionInput{})
 
 	return &Validator{v: v}
+}
+
+func (v *Validator) convertValidationErrors(err error) error {
+	var ve validator.ValidationErrors
+
+	if !errors.As(err, &ve) {
+		return err
+	}
+
+	result := make([]model.ValidationError, 0, len(ve))
+
+	for _, e := range ve {
+		result = append(result, model.ValidationError{
+			Field:   e.Field(),
+			Message: v.mapMessage(e),
+		})
+	}
+
+	return &model.ValidationErrors{
+		Errors: result,
+	}
 }
 
 func validateMonthYear(fl validator.FieldLevel) bool {
@@ -39,38 +71,27 @@ func validateMonthYear(fl validator.FieldLevel) bool {
 }
 
 // Параметр dst принимает УКАЗАТЕЛЬ на структуру
-func (v *Validator) BindAndValidate(r *http.Request, dst interface{}) error {
+func (v *Validator) BindAndValidate(r *http.Request, dst any) error {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(dst); err != nil {
-		return fmt.Errorf("invalid request body %w", err)
+		return fmt.Errorf("invalid request body %w", errors.Join(model.ErrInvalidArgument, err))
 	}
 
-	return v.v.Struct(dst)
+	if err := v.v.Struct(dst); err != nil {
+		return v.convertValidationErrors(err)
+	}
+
+	return nil
 }
 
-func (v *Validator) ValidateQuery(dst interface{}) error {
-	return v.v.Struct(dst)
-}
-
-func (v *Validator) FormatErrors(err error) []model.ValidationError {
-	var result []model.ValidationError
-
-	var ve validator.ValidationErrors
-	if errors.As(err, &ve) {
-		for _, e := range ve {
-			result = append(result, model.ValidationError{
-				Field:   e.Field(),
-				Message: v.mapMessage(e),
-			})
-		}
-		return result
+func (v *Validator) ValidateQuery(dst any) error {
+	if err := v.v.Struct(dst); err != nil {
+		return v.convertValidationErrors(err)
 	}
 
-	return []model.ValidationError{
-		{Message: err.Error()},
-	}
+	return nil
 }
 
 func (v *Validator) mapMessage(e validator.FieldError) string {

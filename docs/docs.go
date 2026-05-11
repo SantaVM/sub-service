@@ -188,7 +188,7 @@ const docTemplate = `{
                 "summary": "Получение подписки по ID",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID подписки",
                         "name": "id",
                         "in": "path",
@@ -230,7 +230,7 @@ const docTemplate = `{
                 "summary": "Обновление подписки",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID подписки",
                         "name": "id",
                         "in": "path",
@@ -281,7 +281,7 @@ const docTemplate = `{
                 "summary": "Удаление подписки",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID подписки",
                         "name": "id",
                         "in": "path",

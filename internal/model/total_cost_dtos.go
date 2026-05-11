@@ -1,62 +1,55 @@
 package model
 
-import (
-	"fmt"
-	"strings"
-)
-
 type TotalCostQuery struct {
-	UserID      *string `validate:"omitempty,uuid"`
-	ServiceName *string
-	StartDate   string  `validate:"required,monthyear"`
-	EndDate     *string `validate:"omitempty,monthyear"`
+	UserID      string `json:"user_id,omitempty" validate:"omitempty,uuid"`
+	ServiceName string `json:"service_name,omitempty"`
+
+	StartDate string `json:"start_date" validate:"required,monthyear"`
+	EndDate   string `json:"end_date,omitempty" validate:"omitempty,monthyear"`
 }
 
 type TotalCostReq struct {
 	UserID      *string
 	ServiceName *string
 	StartDate   MonthYear
-	EndDate     MonthYear
+	EndDate     *MonthYear
 }
 
 func (input TotalCostQuery) ToDomain() (*TotalCostReq, error) {
-	// --- StartDate ---
-	var startDate *MonthYear
-	trimmed := strings.TrimSpace(input.StartDate)
+	var (
+		userId      *string
+		serviceName *string
+		startDate   MonthYear
+		endDate     *MonthYear
+	)
 
-	if trimmed != "" {
-		var e MonthYear
-		if err := e.Parse(trimmed); err != nil {
-			return nil, fmt.Errorf("invalid end_date format (expected MM-YYYY): %w", err)
-		}
-		startDate = &e
+	if input.UserID != "" {
+		userId = &input.UserID
+	}
+
+	if input.ServiceName != "" {
+		serviceName = &input.ServiceName
+	}
+
+	// --- StartDate ---
+	if err := startDate.Parse(input.StartDate); err != nil {
+		return nil, err
 	}
 
 	// --- EndDate ---
-	var endDate *MonthYear
-	if input.EndDate != nil {
-		trimmed := strings.TrimSpace(*input.EndDate)
-
-		if trimmed != "" {
-			var e MonthYear
-			if err := e.Parse(trimmed); err != nil {
-				return nil, fmt.Errorf("invalid end_date format (expected MM-YYYY): %w", err)
-			}
-
-			endDate = &e
+	if input.EndDate != "" {
+		var d MonthYear
+		if err := d.Parse(input.EndDate); err != nil {
+			return nil, err
 		}
-	}
-
-	// business logic
-	if endDate == nil {
-		endDate = &MonthYear{Time: startDate.Time.AddDate(0, 1, 0)}
+		endDate = &d
 	}
 
 	return &TotalCostReq{
-		UserID:      input.UserID,
-		ServiceName: input.ServiceName,
-		StartDate:   *startDate,
-		EndDate:     *endDate,
+		UserID:      userId,
+		ServiceName: serviceName,
+		StartDate:   startDate,
+		EndDate:     endDate,
 	}, nil
 }
 
@@ -65,5 +58,5 @@ func (t TotalCostQuery) GetStartDate() *string {
 }
 
 func (t TotalCostQuery) GetEndDate() *string {
-	return t.EndDate
+	return &t.EndDate
 }

@@ -17,7 +17,7 @@ func LoggerMw(log *slog.Logger) func(http.Handler) http.Handler {
 
 			log.InfoContext(
 				r.Context(),
-				"http request",
+				">>> http request received",
 				"method", r.Method,
 				"path", r.URL.Path,
 				"remote_ip", r.RemoteAddr,
@@ -28,7 +28,7 @@ func LoggerMw(log *slog.Logger) func(http.Handler) http.Handler {
 
 			log.InfoContext(
 				r.Context(),
-				"http request completed",
+				"<<< http request completed",
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", ww.Status(),

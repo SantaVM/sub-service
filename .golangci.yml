@@ -1,0 +1,126 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+  # tests are important in backend projects
+  tests: true
+
+  # useful for monorepos / generated code
+  skip-dirs:
+    - vendor
+    - bin
+    - tmp
+    - docs
+
+  skip-files:
+    - ".*\\.gen\\.go$"
+    - ".*mock.*\\.go$"
+
+linters:
+  default: none
+
+  enable:
+    # --- correctness ---
+    - govet
+    - staticcheck
+    - errcheck
+    - unused
+
+    # --- maintainability ---
+    - revive
+    - gocritic
+
+    # --- security ---
+    - gosec
+
+    # --- common mistakes ---
+    - misspell
+
+    # --- import hygiene ---
+    - importas
+
+    # --- context-related issues ---
+    - noctx
+
+    # --- SQL mistakes ---
+    - sqlclosecheck
+
+    # --- struct initialization ---
+    #- exhaustruct
+
+linters-settings:
+  govet:
+    enable:
+      - shadow
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  revive:
+    severity: warning
+
+    rules:
+      - name: exported
+        disabled: true
+
+      - name: package-comments
+        disabled: true
+
+      - name: var-naming
+
+      - name: indent-error-flow
+
+      - name: empty-block
+
+      - name: unreachable-code
+
+      - name: redefines-builtin-id
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+
+    disabled-checks:
+      - unnamedResult
+      - hugeParam
+      - rangeValCopy
+
+  gosec:
+    excludes:
+      - G404
+
+#  exhaustruct:
+#    exclude:
+#      - '.*http.Client'
+#      - '.*http.Server'
+#      - '.*tls.Config'
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-use-default: false
+
+  exclude-rules:
+    # tests can be less strict
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+#        - exhaustruct
+
+    # allow fmt.Println in examples/tests
+    - path: _test\.go
+      text: "stdout"
+
+formatters:
+  enable:
+    - gofumpt
+
+output:
+  format:
+    text:

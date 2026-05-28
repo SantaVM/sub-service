@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -9,8 +8,8 @@ import (
 type UpdateSubscriptionInput struct {
 	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=2"`
 	Price       *int    `json:"price,omitempty" validate:"omitempty,min=0"`
-	StartDate   *string `json:"start_date,omitempty" validate:"omitempty,monthyear"`
-	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,monthyear"`
+	StartDate   *string `json:"start_date,omitempty" validate:"omitempty,datetime=01-2006"`
+	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
 }
 
 type UpdateSubscription struct {
@@ -45,7 +44,7 @@ func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
 		if trimmed != "" {
 			var e MonthYear
 			if err := e.Parse(trimmed); err != nil {
-				return nil, fmt.Errorf("invalid end_date format (expected MM-YYYY): %w", err)
+				return nil, err
 			}
 			startDate = &e
 		}
@@ -60,7 +59,7 @@ func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
 		if trimmed != "" {
 			var e MonthYear
 			if err := e.Parse(trimmed); err != nil {
-				return nil, fmt.Errorf("invalid end_date format (expected MM-YYYY): %w", err)
+				return nil, err
 			}
 
 			endDate = &e

@@ -20,6 +20,7 @@ type Validator struct {
 func New() *Validator {
 	v := validator.New(validator.WithRequiredStructEnabled())
 
+	// register function to get tag name from json tags
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		// skip if tag key says it should be ignored
@@ -28,8 +29,6 @@ func New() *Validator {
 		}
 		return name
 	})
-
-	v.RegisterValidation("monthyear", validateMonthYear)
 
 	v.RegisterStructValidation(validateStartEndDate, model.TotalCostQuery{})
 	v.RegisterStructValidation(validateStartEndDate, model.UpdateSubscriptionInput{})
@@ -57,17 +56,6 @@ func (v *Validator) convertValidationErrors(err error) error {
 	return &model.ValidationErrors{
 		Errors: result,
 	}
-}
-
-func validateMonthYear(fl validator.FieldLevel) bool {
-	value := fl.Field().String()
-
-	if value == "" {
-		return true // пусть "required" решает
-	}
-
-	_, err := time.Parse("01-2006", value)
-	return err == nil
 }
 
 // Параметр dst принимает УКАЗАТЕЛЬ на структуру
@@ -109,7 +97,7 @@ func (v *Validator) mapMessage(e validator.FieldError) string {
 	case "min":
 		return e.Field() + " must be >= " + e.Param()
 
-	case "monthyear":
+	case "datetime":
 		return e.Field() + " must be in MM-YYYY format"
 
 	case "after_start":

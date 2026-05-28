@@ -28,7 +28,7 @@ type MonthYear struct {
 func (m *MonthYear) Parse(s string) error {
 	t, err := time.Parse("01-2006", s)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid date format (expected MM-YYYY): %w", err)
 	}
 
 	m.Time = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
@@ -37,6 +37,7 @@ func (m *MonthYear) Parse(s string) error {
 
 func (m *MonthYear) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
+		m.Time = time.Time{} // нулевое значение
 		return nil
 	}
 
@@ -44,7 +45,7 @@ func (m *MonthYear) UnmarshalJSON(data []byte) error {
 
 	t, err := time.Parse("01-2006", s)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid date format (expected MM-YYYY): %w", err)
 	}
 
 	m.Time = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)

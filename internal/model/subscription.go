@@ -26,7 +26,9 @@ type MonthYear struct {
 
 // парсим из Query
 func (m *MonthYear) Parse(s string) error {
-	t, err := time.Parse("01-2006", s)
+	trimmed := strings.TrimSpace(s)
+
+	t, err := time.Parse("01-2006", trimmed)
 	if err != nil {
 		return fmt.Errorf("invalid date format (expected MM-YYYY): %w", err)
 	}
@@ -37,7 +39,6 @@ func (m *MonthYear) Parse(s string) error {
 
 func (m *MonthYear) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
-		m.Time = time.Time{} // нулевое значение
 		return nil
 	}
 

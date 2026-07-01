@@ -269,13 +269,54 @@ func TestUpdateSubscription(t *testing.T) {
 				Method(http.MethodPut).
 				Path("/subscriptions/1").
 				URLParam("id", "1").
-				JSON(model.UpdateSubscriptionInput{
-					ServiceName: ptr("Netflix"),
-					Price:       ptr(20),
-				}).
+				JSON(
+					map[string]any{
+						"service_name": "Netflix",
+						"price":        20,
+						"start_date":   "01-2020",
+						"end_date":     "01-2021",
+					},
+				).
 				Build(),
 			check: func(t *testing.T, resp *Response) {
 				var out model.Subscription
+
+				resp.
+					Status(http.StatusOK).
+					JSON(&out)
+
+				require.Equal(t, uint(1), out.ID)
+			},
+		},
+		{
+			name: "success - update with null fields",
+			setup: func(svc *mockService) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
+					require.NotNil(t, input.EndDate)
+					require.True(t, input.EndDate.Time.IsZero())
+					return &model.Subscription{ID: 1}, nil
+				}
+			},
+			req: NewRequest().
+				Method(http.MethodPut).
+				Path("/subscriptions/1").
+				URLParam("id", "1").
+				JSON(
+					model.UpdateSubscriptionInput{
+						ServiceName: ptr("Netflix"),
+						Price:       ptr(20),
+						StartDate:   ptr("01-2020"),
+						EndDate: model.Nullable[string]{
+							Set:   true,
+							Value: nil,
+						},
+					},
+				).
+				Build(),
+			check: func(t *testing.T, resp *Response) {
+				var out model.Subscription
+
+				// fmt.Println(resp.Rec.Body.String())
 
 				resp.
 					Status(http.StatusOK).
@@ -322,7 +363,7 @@ func TestUpdateSubscription(t *testing.T) {
 			},
 		},
 		{
-			name: "validation error",
+			name: "validation error - end date before start date",
 			setup: func(svc *mockService) {
 				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					panic("should not be called")
@@ -333,9 +374,9 @@ func TestUpdateSubscription(t *testing.T) {
 				Path("/subscriptions/1").
 				URLParam("id", "1").
 				JSON(
-					model.UpdateSubscriptionInput{
-						StartDate: ptr("03-2000"),
-						EndDate:   ptr("01-2000"), // before start_date
+					map[string]any{
+						"start_date": "03-2000",
+						"end_date":   "01-2000", // before start_date
 					},
 				).
 				Build(),
@@ -347,6 +388,35 @@ func TestUpdateSubscription(t *testing.T) {
 					JSON(&out)
 
 				require.NotEmpty(t, out.Errors)
+				require.Contains(t, out.Errors[0].Message, "end_date must be after start_date")
+			},
+		},
+		{
+			name: "validation error - invalid end date",
+			setup: func(svc *mockService) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
+					panic("should not be called")
+				}
+			},
+			req: NewRequest().
+				Method(http.MethodPut).
+				Path("/subscriptions/1").
+				URLParam("id", "1").
+				JSON(
+					map[string]any{
+						"end_date": "wrong format",
+					},
+				).
+				Build(),
+			check: func(t *testing.T, resp *Response) {
+				var out ErrorResponse
+
+				resp.
+					Status(http.StatusBadRequest).
+					JSON(&out)
+
+				require.NotEmpty(t, out.Errors)
+				require.Contains(t, out.Errors[0].Message, "end date must be in MM-YYYY format")
 			},
 		},
 		{
@@ -360,9 +430,11 @@ func TestUpdateSubscription(t *testing.T) {
 				Method(http.MethodPut).
 				Path("/subscriptions/1").
 				URLParam("id", "1").
-				JSON(model.UpdateSubscriptionInput{
-					ServiceName: ptr("Netflix"),
-				}).
+				JSON(
+					map[string]any{
+						"service_name": "Netflix",
+					},
+				).
 				Build(),
 			check: func(t *testing.T, resp *Response) {
 				resp.
@@ -402,9 +474,11 @@ func TestUpdateSubscription(t *testing.T) {
 				Method(http.MethodPut).
 				Path("/subscriptions/1").
 				URLParam("id", "1").
-				JSON(model.UpdateSubscriptionInput{
-					ServiceName: ptr("Netflix"),
-				}).
+				JSON(
+					map[string]any{
+						"service_name": "Netflix",
+					},
+				).
 				Build(),
 			check: func(t *testing.T, resp *Response) {
 				var out ErrorResponse
@@ -414,6 +488,33 @@ func TestUpdateSubscription(t *testing.T) {
 					JSON(&out)
 
 				require.Contains(t, out.Error, "not found")
+			},
+		},
+		{
+			name: "no fields to update",
+			setup: func(svc *mockService) {
+				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
+					return nil, model.ErrNoFieldsToUpdate
+				}
+			},
+			req: NewRequest().
+				Method(http.MethodPut).
+				Path("/subscriptions/1").
+				URLParam("id", "1").
+				JSON(
+					map[string]any{
+						"service_name": "Netflix",
+					},
+				).
+				Build(),
+			check: func(t *testing.T, resp *Response) {
+				var out ErrorResponse
+
+				resp.
+					Status(http.StatusBadRequest).
+					JSON(&out)
+
+				require.Contains(t, out.Error, "no fields to update")
 			},
 		},
 		{
@@ -427,9 +528,11 @@ func TestUpdateSubscription(t *testing.T) {
 				Method(http.MethodPut).
 				Path("/subscriptions/1").
 				URLParam("id", "1").
-				JSON(model.UpdateSubscriptionInput{
-					ServiceName: ptr("Netflix"),
-				}).
+				JSON(
+					map[string]any{
+						"service_name": "Netflix",
+					},
+				).
 				Build(),
 			check: func(t *testing.T, resp *Response) {
 				resp.

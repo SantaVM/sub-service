@@ -31,6 +31,9 @@ func handleHTTPError(w http.ResponseWriter, err error) {
 	case errors.Is(err, model.ErrInvalidDateRange):
 		status = http.StatusBadRequest
 
+	case errors.Is(err, model.ErrNoFieldsToUpdate):
+		status = http.StatusBadRequest
+
 	case errors.Is(err, model.ErrSubscriptionOverlap):
 		status = http.StatusConflict
 

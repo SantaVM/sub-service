@@ -30,9 +30,12 @@ func New() *Validator {
 		return name
 	})
 
-	v.RegisterStructValidation(validateStartEndDate, model.TotalCostQuery{})
-	v.RegisterStructValidation(validateStartEndDate, model.UpdateSubscriptionInput{})
-	v.RegisterStructValidation(validateStartEndDate, model.CreateSubscriptionInput{})
+	v.RegisterStructValidation(
+		validateStartEndDate,
+		model.TotalCostQuery{},
+		model.UpdateSubscriptionInput{},
+		model.CreateSubscriptionInput{},
+	)
 
 	return &Validator{v: v}
 }
@@ -58,6 +61,13 @@ func (v *Validator) convertValidationErrors(err error) error {
 	}
 }
 
+// Интерфейс для структур, имеющих Nullable поля
+type validated interface {
+	Validate() *model.ValidationErrors
+}
+
+var _ validated = (*model.UpdateSubscriptionInput)(nil)
+
 // Параметр dst принимает УКАЗАТЕЛЬ на структуру
 func (v *Validator) BindAndValidate(r *http.Request, dst any) error {
 	decoder := json.NewDecoder(r.Body)
@@ -65,6 +75,14 @@ func (v *Validator) BindAndValidate(r *http.Request, dst any) error {
 
 	if err := decoder.Decode(dst); err != nil {
 		return fmt.Errorf("invalid request body %w", errors.Join(model.ErrInvalidArgument, err))
+	}
+
+	// валидируем Nullable поля
+	vn, ok := dst.(validated)
+	if ok {
+		if err := vn.Validate(); err != nil {
+			return err
+		}
 	}
 
 	if err := v.v.Struct(dst); err != nil {
@@ -108,17 +126,17 @@ func (v *Validator) mapMessage(e validator.FieldError) string {
 	}
 }
 
-type HasStartEndDate interface {
+type hasStartEndDate interface {
 	GetStartDate() *string
 	GetEndDate() *string
 }
 
-var _ HasStartEndDate = (*model.UpdateSubscriptionInput)(nil)
-var _ HasStartEndDate = (*model.CreateSubscriptionInput)(nil)
-var _ HasStartEndDate = (*model.TotalCostQuery)(nil)
+var _ hasStartEndDate = (*model.UpdateSubscriptionInput)(nil)
+var _ hasStartEndDate = (*model.CreateSubscriptionInput)(nil)
+var _ hasStartEndDate = (*model.TotalCostQuery)(nil)
 
 func validateStartEndDate(sl validator.StructLevel) {
-	query, ok := sl.Current().Interface().(HasStartEndDate)
+	query, ok := sl.Current().Interface().(hasStartEndDate)
 	if !ok {
 		return
 	}

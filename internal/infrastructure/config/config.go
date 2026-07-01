@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -10,6 +11,7 @@ import (
 type Config struct {
 	Port        string
 	DatabaseURL string
+	BasePath    string
 
 	DBHost     string
 	DBPort     string
@@ -18,6 +20,9 @@ type Config struct {
 	DBPassword string
 
 	Env string
+
+	SwaggerHost    string
+	RequestTimeout int
 }
 
 func Load() (*Config, error) {
@@ -27,13 +32,30 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	timeoutStr := getEnv("REQUEST_TIMEOUT", "4")
+	timeout, err := strconv.Atoi(timeoutStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid REQUEST_TIMEOUT: %w", err)
+	}
+
 	cfg := &Config{
-		Port:       getEnv("PORT", "8080"),
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBName:     getEnv("DB_NAME", "subservice"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
+		Port:           getEnv("PORT", "8080"),
+		BasePath:       getEnv("BASE_PATH", "/api/v1"),
+		DBHost:         getEnv("DB_HOST", "localhost"),
+		DBPort:         getEnv("DB_PORT", "5432"),
+		DBName:         getEnv("DB_NAME", "subservice"),
+		DBUser:         getEnv("DB_USER", "postgres"),
+		DBPassword:     getEnv("DB_PASSWORD", "postgres"),
+		SwaggerHost:    getEnv("SWAGGER_HOST", "localhost"),
+		RequestTimeout: timeout,
+	}
+
+	if err := validatePort(cfg.Port); err != nil {
+		return nil, err
+	}
+
+	if err := validatePort(cfg.DBPort); err != nil {
+		return nil, err
 	}
 
 	// Формирование Database URL
@@ -80,4 +102,21 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func validatePort(port string) error {
+	if port == "" {
+		return fmt.Errorf("PORT is not set")
+	}
+
+	portValue, err := strconv.Atoi(port)
+	if err != nil {
+		return fmt.Errorf("invalid PORT: %w", err)
+	}
+
+	if portValue < 1 || portValue > 65535 {
+		return fmt.Errorf("PORT must be between 1 and 65535")
+	}
+
+	return nil
 }

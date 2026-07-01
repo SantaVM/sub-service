@@ -80,7 +80,6 @@ func New() (*App, error) {
 }
 
 func (a *App) Run() error {
-	// запуск сервера
 	go func() {
 		a.logger.Info("starting server", "addr", a.server.Addr)
 
@@ -122,9 +121,9 @@ func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Ha
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(mymw.LoggerMw(log))
 	r.Use(mymw.Recoverer(log))
-	r.Use(middleware.Timeout(3 * time.Second)) // устанавливаем таймауты запросов, в т.ч. на запросы в БД
+	r.Use(mymw.LoggerMw(log))
+	r.Use(middleware.Timeout(time.Duration(cfg.RequestTimeout) * time.Second)) // устанавливаем таймауты запросов, в т.ч. на запросы в БД
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -142,8 +141,8 @@ func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Ha
 	}))
 
 	// swagger
-	docs.SwaggerInfo.Host = "localhost:" + cfg.Port
-	docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Host = cfg.SwaggerHost + ":" + cfg.Port
+	docs.SwaggerInfo.BasePath = cfg.BasePath
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
@@ -154,7 +153,7 @@ func newRouter(h *handler.Handler, cfg *config.Config, log *slog.Logger) http.Ha
 	})
 
 	// routes
-	r.Route("/api/v1", func(r chi.Router) {
+	r.Route(cfg.BasePath, func(r chi.Router) {
 		r.Route("/subscriptions", func(r chi.Router) {
 			r.Post("/", handler.Adapt(h.CreateSubscription))
 			r.Get("/", handler.Adapt(h.ListSubscriptions))

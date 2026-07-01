@@ -4,14 +4,17 @@ import (
 	"strings"
 )
 
-// TODO: implement Nullable fields
 type UpdateSubscriptionInput struct {
-	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=2"`
-	Price       *int    `json:"price,omitempty" validate:"omitempty,min=0"`
-	StartDate   *string `json:"start_date,omitempty" validate:"omitempty,datetime=01-2006"`
-	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
+	ServiceName *string          `json:"service_name,omitempty" validate:"omitempty,min=2"`
+	Price       *int             `json:"price,omitempty" validate:"omitempty,min=0"`
+	StartDate   *string          `json:"start_date,omitempty" validate:"omitempty,datetime=01-2006"`
+	EndDate     Nullable[string] `json:"end_date" swaggertype:"string"`
 }
 
+/*
+Если поле EndDate равно нулевой дате time.Time{}, то это означает,
+что при обновлении подписки дата окончания должна быть удалена.
+*/
 type UpdateSubscription struct {
 	ServiceName *string
 	Price       *int
@@ -24,7 +27,7 @@ func (u UpdateSubscriptionInput) GetStartDate() *string {
 }
 
 func (u UpdateSubscriptionInput) GetEndDate() *string {
-	return u.EndDate
+	return u.EndDate.Value
 }
 
 func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
@@ -36,34 +39,29 @@ func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
 	}
 
 	// --- StartDate ---
-	// TODO: refactor
 	var startDate *MonthYear
 	if input.StartDate != nil {
-		trimmed := strings.TrimSpace(*input.StartDate)
+		var e MonthYear
 
-		if trimmed != "" {
-			var e MonthYear
-			if err := e.Parse(trimmed); err != nil {
-				return nil, err
-			}
-			startDate = &e
+		if err := e.Parse(*input.StartDate); err != nil {
+			return nil, err
 		}
+
+		startDate = &e
 	}
 
 	// --- EndDate ---
-	// TODO: refactor
 	var endDate *MonthYear
-	if input.EndDate != nil {
-		trimmed := strings.TrimSpace(*input.EndDate)
+	if input.EndDate.Set {
+		var end MonthYear // нулевое значение даты
 
-		if trimmed != "" {
-			var e MonthYear
-			if err := e.Parse(trimmed); err != nil {
+		if input.EndDate.Value != nil {
+			if err := end.Parse(*input.EndDate.Value); err != nil {
 				return nil, err
 			}
-
-			endDate = &e
 		}
+
+		endDate = &end
 	}
 
 	return &UpdateSubscription{
@@ -72,4 +70,27 @@ func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
 		StartDate:   startDate,
 		EndDate:     endDate,
 	}, nil
+}
+
+/*
+Валидируем Nullable поля только
+*/
+func (u UpdateSubscriptionInput) Validate() *ValidationErrors {
+	var validationErrors ValidationErrors
+
+	if u.EndDate.Value != nil {
+		var endDate MonthYear
+		if err := endDate.Parse(*u.EndDate.Value); err != nil {
+			validationErrors.Errors = append(validationErrors.Errors, ValidationError{
+				Field:   "end_date",
+				Message: "end date must be in MM-YYYY format",
+			})
+		}
+	}
+
+	if len(validationErrors.Errors) > 0 {
+		return &validationErrors
+	}
+
+	return nil
 }

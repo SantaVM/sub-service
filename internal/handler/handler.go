@@ -154,8 +154,6 @@ func (h *Handler) ListSubscriptions(w http.ResponseWriter, r *http.Request) erro
 		ServiceName: nilIfEmpty(h.getQueryParam(r, "service_name")),
 	}
 
-	// TODO: make  size and page optional
-
 	if sizeStr := r.URL.Query().Get("size"); sizeStr != "" {
 		if size, err := strconv.Atoi(sizeStr); err == nil {
 			query.Size = size
@@ -205,8 +203,6 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) err
 		log.ErrorContext(r.Context(), "invalid parameter", "message", err.Error())
 		return err
 	}
-
-	// TODO: implement nullable fields
 
 	var input model.UpdateSubscriptionInput
 	if err := h.validator.BindAndValidate(r, &input); err != nil {

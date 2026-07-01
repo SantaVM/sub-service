@@ -96,7 +96,6 @@ func (r *SubscriptionRepository) GetByID(ctx context.Context, id uint) (*model.S
 	return sub, nil
 }
 
-// TODO: add fields for SORT and ORDER??
 func (r *SubscriptionRepository) List(ctx context.Context, query model.ListSubscriptionsQuery) (*model.Page[*model.Subscription], error) {
 	r.logger.InfoContext(ctx, "listing subscriptions", "user_id", query.UserID, "service_name", query.ServiceName)
 
@@ -199,39 +198,40 @@ func (r *SubscriptionRepository) List(ctx context.Context, query model.ListSubsc
 func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 	r.logger.InfoContext(ctx, "updating subscription", "subscription_id", id)
 
-	// TODO: refactor to func Named(name string, value any) ?
-
 	setClauses := []string{}
 	args := []interface{}{}
-	argNum := 1
+
+	addField := func(column string, value any) {
+		args = append(args, value)
+		setClauses = append(
+			setClauses,
+			fmt.Sprintf("%s = $%d", column, len(args)),
+		)
+	}
 
 	if input.ServiceName != nil {
-		setClauses = append(setClauses, fmt.Sprintf("service_name = $%d", argNum))
-		args = append(args, *input.ServiceName)
-		argNum++
+		addField("service_name", *input.ServiceName)
 	}
 
 	if input.Price != nil {
-		setClauses = append(setClauses, fmt.Sprintf("price = $%d", argNum))
-		args = append(args, *input.Price)
-		argNum++
+		addField("price", *input.Price)
 	}
 
 	if input.StartDate != nil {
-		setClauses = append(setClauses, fmt.Sprintf("start_date = $%d", argNum))
-		args = append(args, *input.StartDate)
-		argNum++
+		addField("start_date", *input.StartDate)
 	}
 
 	if input.EndDate != nil {
-		setClauses = append(setClauses, fmt.Sprintf("end_date = $%d", argNum))
-		args = append(args, *input.EndDate)
-		argNum++
+		if input.EndDate.Time.IsZero() {
+			addField("end_date", nil) // удаляем end_date, устанавливая его в NULL
+		} else {
+			addField("end_date", input.EndDate.Time)
+		}
 	}
 
 	if len(setClauses) == 0 {
 		r.logger.WarnContext(ctx, "no fields to update", "subscription_id", id)
-		return r.GetByID(ctx, id)
+		return nil, model.ErrNoFieldsToUpdate
 	}
 
 	setClauses = append(setClauses, "updated_at = NOW()")
@@ -242,7 +242,15 @@ func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input mode
 		SET %s
 		WHERE id = $%d
 		RETURNING id, service_name, price, user_id, start_date, end_date, created_at, updated_at
-	`, strings.Join(setClauses, ", "), argNum)
+	`, strings.Join(setClauses, ", "), len(args))
+
+	r.logger.DebugContext(
+		ctx,
+		"update query constructed",
+		"query",
+		strings.ReplaceAll(strings.ReplaceAll(query, "\n", " "), "\t", ""),
+		"args",
+		args)
 
 	sub := &model.Subscription{}
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
@@ -257,7 +265,7 @@ func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input mode
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			r.logger.WarnContext(ctx, "subscription not found", "subscription_id", id)
 			return nil, model.ErrNotFound
 		}
@@ -295,7 +303,7 @@ func (r *SubscriptionRepository) Delete(ctx context.Context, id uint) error {
 }
 
 func (r *SubscriptionRepository) GetTotalCost(ctx context.Context, query model.TotalCostReq) (int, error) {
-	r.logger.InfoContext(
+	r.logger.DebugContext(
 		ctx,
 		"calculating total cost",
 		"user_id", query.UserID,

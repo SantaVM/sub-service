@@ -3,10 +3,11 @@ package model
 import "errors"
 
 var (
-	ErrNotFound        = errors.New("entity not found")
-	ErrConflict        = errors.New("conflict")
-	ErrInvalidArgument = errors.New("invalid argument")
-	ErrValidation      = errors.New("validation error")
+	ErrNotFound         = errors.New("entity not found")
+	ErrNoFieldsToUpdate = errors.New("no fields to update")
+	ErrConflict         = errors.New("conflict")
+	ErrInvalidArgument  = errors.New("invalid argument")
+	ErrValidation       = errors.New("validation error")
 
 	ErrInvalidDateRange    = errors.New("invalid date range")
 	ErrSubscriptionOverlap = errors.New("subscription overlap")

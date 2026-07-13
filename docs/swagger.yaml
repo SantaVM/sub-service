@@ -17,6 +17,7 @@ definitions:
   model.CreateSubscriptionInput:
     properties:
       end_date:
+        example: 06-2027
         type: string
       price:
         minimum: 0
@@ -25,6 +26,7 @@ definitions:
         minLength: 2
         type: string
       start_date:
+        example: 06-2026
         type: string
       user_id:
         type: string
@@ -37,8 +39,11 @@ definitions:
   model.Subscription:
     properties:
       created_at:
+        example: "2026-06-19T00:26:11Z"
+        format: date-time
         type: string
       end_date:
+        example: 06-2027
         type: string
       id:
         type: integer
@@ -47,10 +52,14 @@ definitions:
       service_name:
         type: string
       start_date:
+        example: 06-2026
         type: string
       updated_at:
+        example: "2026-07-19T00:26:11Z"
+        format: date-time
         type: string
       user_id:
+        example: b695926c-7d36-477b-b945-f14d05793c14
         type: string
     type: object
   model.SubscriptionPageResponse:
@@ -75,6 +84,7 @@ definitions:
   model.UpdateSubscriptionInput:
     properties:
       end_date:
+        example: 06-2027
         type: string
       price:
         minimum: 0
@@ -83,6 +93,7 @@ definitions:
         minLength: 2
         type: string
       start_date:
+        example: 06-2026
         type: string
     type: object
   model.ValidationError:
@@ -157,6 +168,10 @@ paths:
             $ref: '#/definitions/model.Subscription'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "408":
+          description: Request Timeout
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "409":
@@ -248,6 +263,10 @@ paths:
             $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "408":
+          description: Request Timeout
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "409":

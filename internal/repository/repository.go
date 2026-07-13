@@ -221,11 +221,11 @@ func (r *SubscriptionRepository) Update(ctx context.Context, id uint, input mode
 		addField("start_date", *input.StartDate)
 	}
 
-	if input.EndDate != nil {
-		if input.EndDate.Time.IsZero() {
+	if input.EndDate.Set {
+		if input.EndDate.Value == nil {
 			addField("end_date", nil) // удаляем end_date, устанавливая его в NULL
 		} else {
-			addField("end_date", input.EndDate.Time)
+			addField("end_date", *input.EndDate.Value)
 		}
 	}
 
@@ -382,6 +382,8 @@ func mapPostgresError(err error) error {
 		if pqErr.Constraint == "no_overlapping_subscriptions" {
 			return model.ErrSubscriptionOverlap
 		}
+	case "57014": // query canceled by user (e.g., due to context timeout)
+		return model.ErrQueryCanceled
 	}
 
 	return err

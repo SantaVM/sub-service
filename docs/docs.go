@@ -106,6 +106,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
+                    "408": {
+                        "description": "Request Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -265,6 +271,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
+                    "408": {
+                        "description": "Request Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -367,7 +379,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "end_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "06-2027"
                 },
                 "price": {
                     "type": "integer",
@@ -378,7 +391,8 @@ const docTemplate = `{
                     "minLength": 2
                 },
                 "start_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "06-2026"
                 },
                 "user_id": {
                     "type": "string"
@@ -389,10 +403,13 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-06-19T00:26:11Z"
                 },
                 "end_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "06-2027"
                 },
                 "id": {
                     "type": "integer"
@@ -404,13 +421,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "06-2026"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-07-19T00:26:11Z"
                 },
                 "user_id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "b695926c-7d36-477b-b945-f14d05793c14"
                 }
             }
         },
@@ -447,7 +468,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "06-2027"
                 },
                 "price": {
                     "type": "integer",
@@ -458,7 +480,8 @@ const docTemplate = `{
                     "minLength": 2
                 },
                 "start_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "06-2026"
                 }
             }
         },

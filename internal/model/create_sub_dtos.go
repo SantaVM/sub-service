@@ -11,8 +11,8 @@ type CreateSubscriptionInput struct {
 	ServiceName string  `json:"service_name" validate:"required,min=2"`
 	Price       int     `json:"price" validate:"required,min=0"`
 	UserID      string  `json:"user_id" validate:"required,uuid"`
-	StartDate   string  `json:"start_date" validate:"required,datetime=01-2006"`
-	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
+	StartDate   string  `json:"start_date" validate:"required,datetime=01-2006" example:"06-2026"`
+	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006" example:"06-2027"`
 }
 
 type CreateSubscription struct {
@@ -39,14 +39,12 @@ func (input CreateSubscriptionInput) ToDomain() (*CreateSubscription, error) {
 	}
 
 	// --- StartDate ---
-	// TODO: refactor
 	var startDate MonthYear
 	if err := startDate.Parse(input.StartDate); err != nil {
 		return nil, err
 	}
 
 	// --- EndDate ---
-	// TODO: refactor
 	var endDate *MonthYear
 	if input.EndDate != nil {
 		trimmed := strings.TrimSpace(*input.EndDate)

@@ -13,11 +13,11 @@ type Subscription struct {
 	ID          uint       `json:"id"`
 	ServiceName string     `json:"service_name"`
 	Price       int        `json:"price"`
-	UserID      uuid.UUID  `json:"user_id"`
-	StartDate   MonthYear  `json:"start_date" swaggertype:"string"`
-	EndDate     *MonthYear `json:"end_date,omitempty" swaggertype:"string"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
+	UserID      uuid.UUID  `json:"user_id" example:"b695926c-7d36-477b-b945-f14d05793c14"`
+	StartDate   MonthYear  `json:"start_date" swaggertype:"string" example:"06-2026"`
+	EndDate     *MonthYear `json:"end_date,omitempty" swaggertype:"string" example:"06-2027"`
+	CreatedAt   time.Time  `json:"created_at" format:"date-time" example:"2026-06-19T00:26:11Z"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty" format:"date-time" example:"2026-07-19T00:26:11Z"`
 }
 
 type MonthYear struct {

@@ -43,6 +43,9 @@ func handleHTTPError(w http.ResponseWriter, err error) {
 	case errors.Is(err, model.ErrNotFound):
 		status = http.StatusNotFound
 
+	case errors.Is(err, model.ErrQueryCanceled):
+		status = http.StatusRequestTimeout
+
 	default:
 		status = http.StatusInternalServerError
 	}

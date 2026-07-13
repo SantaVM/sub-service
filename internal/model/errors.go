@@ -11,6 +11,8 @@ var (
 
 	ErrInvalidDateRange    = errors.New("invalid date range")
 	ErrSubscriptionOverlap = errors.New("subscription overlap")
+
+	ErrQueryCanceled = errors.New("request timeout")
 )
 
 type ValidationError struct {

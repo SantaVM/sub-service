@@ -262,6 +262,23 @@ func TestUpdateSubscription(t *testing.T) {
 			setup: func(svc *mockService) {
 				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					require.Equal(t, uint(1), id)
+
+					require.Equal(
+						t,
+						model.UpdateSubscription{
+							ServiceName: ptr("Netflix"),
+							Price:       ptr(20),
+							StartDate: ptr(
+								model.MonthYear{Time: time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)},
+							),
+							EndDate: model.Nullable[model.MonthYear]{
+								Set:   true,
+								Value: ptr(model.MonthYear{Time: time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)}),
+							},
+						},
+						input,
+					)
+
 					return &model.Subscription{ID: 1}, nil
 				}
 			},
@@ -293,7 +310,8 @@ func TestUpdateSubscription(t *testing.T) {
 			setup: func(svc *mockService) {
 				svc.UpdateSubscriptionFn = func(ctx context.Context, id uint, input model.UpdateSubscription) (*model.Subscription, error) {
 					require.NotNil(t, input.EndDate)
-					require.True(t, input.EndDate.Time.IsZero())
+					require.True(t, input.EndDate.Set)
+					require.Nil(t, input.EndDate.Value) // end_date is set to null
 					return &model.Subscription{ID: 1}, nil
 				}
 			},

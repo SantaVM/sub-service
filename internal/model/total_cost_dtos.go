@@ -4,8 +4,8 @@ type TotalCostQuery struct {
 	UserID      string `json:"user_id,omitempty" validate:"omitempty,uuid"`
 	ServiceName string `json:"service_name,omitempty"`
 
-	StartDate string `json:"start_date" validate:"required,datetime=01-2006"`
-	EndDate   string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
+	StartDate string `json:"start_date" validate:"required,datetime=01-2006" example:"06-2026"`
+	EndDate   string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006" example:"06-2027"`
 }
 
 type TotalCostReq struct {

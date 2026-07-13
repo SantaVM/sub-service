@@ -7,19 +7,15 @@ import (
 type UpdateSubscriptionInput struct {
 	ServiceName *string          `json:"service_name,omitempty" validate:"omitempty,min=2"`
 	Price       *int             `json:"price,omitempty" validate:"omitempty,min=0"`
-	StartDate   *string          `json:"start_date,omitempty" validate:"omitempty,datetime=01-2006"`
-	EndDate     Nullable[string] `json:"end_date" swaggertype:"string"`
+	StartDate   *string          `json:"start_date,omitempty" validate:"omitempty,datetime=01-2006" example:"06-2026"`
+	EndDate     Nullable[string] `json:"end_date" swaggertype:"string" example:"06-2027"`
 }
 
-/*
-Если поле EndDate равно нулевой дате time.Time{}, то это означает,
-что при обновлении подписки дата окончания должна быть удалена.
-*/
 type UpdateSubscription struct {
 	ServiceName *string
 	Price       *int
 	StartDate   *MonthYear
-	EndDate     *MonthYear
+	EndDate     Nullable[MonthYear]
 }
 
 func (u UpdateSubscriptionInput) GetStartDate() *string {
@@ -51,24 +47,26 @@ func (input UpdateSubscriptionInput) ToDomain() (*UpdateSubscription, error) {
 	}
 
 	// --- EndDate ---
-	var endDate *MonthYear
+	var nullable Nullable[MonthYear]
 	if input.EndDate.Set {
-		var end MonthYear // нулевое значение даты
+		nullable.Set = true
 
 		if input.EndDate.Value != nil {
+			var end MonthYear
+
 			if err := end.Parse(*input.EndDate.Value); err != nil {
 				return nil, err
 			}
-		}
 
-		endDate = &end
+			nullable.Value = &end
+		}
 	}
 
 	return &UpdateSubscription{
 		ServiceName: serviceName,
 		Price:       input.Price,
 		StartDate:   startDate,
-		EndDate:     endDate,
+		EndDate:     nullable,
 	}, nil
 }
 

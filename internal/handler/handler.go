@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	myv "sub-service/internal/infrastructure/validator"
 	"sub-service/internal/model"
@@ -66,6 +65,7 @@ func Adapt(h HandlerFunction) http.HandlerFunc {
 // @Param subscription body model.CreateSubscriptionInput true "Данные для создания подписки"
 // @Success 201 {object} model.Subscription
 // @Failure 400 {object} ErrorResponse
+// @Failure 408 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /subscriptions [post]
@@ -105,6 +105,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) err
 // @Success 200 {object} model.Subscription
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /subscriptions/{id} [get]
 func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) error {
 	const op = "Handler.GetSubscription"
@@ -143,6 +144,7 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) error 
 // @Param page query int true "Страница (начиная с 1)" default(1)
 // @Success 200 {object} model.SubscriptionPageResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /subscriptions [get]
 func (h *Handler) ListSubscriptions(w http.ResponseWriter, r *http.Request) error {
 	const op = "Handler.ListSubscriptions"
@@ -191,7 +193,9 @@ func (h *Handler) ListSubscriptions(w http.ResponseWriter, r *http.Request) erro
 // @Success 200 {object} model.Subscription
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
+// @Failure 408 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /subscriptions/{id} [put]
 func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) error {
 	const op = "Handler.UpdateSubscription"
@@ -238,6 +242,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) err
 // @Success 204 "No Content"
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /subscriptions/{id} [delete]
 func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) error {
 	const op = "Handler.DeleteSubscription"
@@ -276,6 +281,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) err
 // @Param end_date query string false "Дата окончания периода (не включая). При отсутствии принимается период в 1 месяц" default(02-2026)
 // @Success 200 {object} TotalCostResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /subscriptions/total [get]
 func (h *Handler) GetTotalCost(w http.ResponseWriter, r *http.Request) error {
 	const op = "Handler.GetTotalCost"
@@ -330,22 +336,23 @@ func (h *Handler) GetUUID(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	uuidStr := generatedUUID.String()
-
-	ctx := r.Context()
+	log.DebugContext(r.Context(), "generated UUID", "uuid", generatedUUID.String())
 
 	w.Header().Set("Content-Type", "text/plain")
-	// w.Write([]byte(uuidStr))
+	_, err = w.Write([]byte(uuidStr))
+	return err
 
-	// для тестирования работы middleware.Timeout()
-	select {
-	case <-time.After(1 * time.Second):
-		_, err = w.Write([]byte(uuidStr))
-		return err
+	//для тестирования работы middleware.Timeout() на уровне handler
+	// ctx := r.Context()
+	// select {
+	// case <-time.After(5 * time.Second):
+	// 	_, err = w.Write([]byte(uuidStr))
+	// 	return err
 
-	case <-ctx.Done():
-		log.ErrorContext(ctx, ctx.Err().Error())
-		return ctx.Err()
-	}
+	// case <-ctx.Done():
+	// 	log.ErrorContext(ctx, ctx.Err().Error())
+	// 	return ctx.Err()
+	// }
 }
 
 // Вспомогательные функции
